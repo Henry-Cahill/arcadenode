@@ -1,0 +1,53 @@
+# Arma Reforger Server - Standalone Docker Compose
+# For use with ArcadeNode Panel
+
+version: '3.8'
+
+services:
+  arma-reforger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arcadenode/arma-reforger:latest
+    container_name: reforger-server
+    restart: unless-stopped
+    
+    environment:
+      - SERVER_NAME=My Reforger Server
+      - SERVER_PASSWORD=
+      - ADMIN_PASSWORD=changeme
+      - GAME_PORT=2001
+      - A2S_PORT=17777
+      - MAX_PLAYERS=64
+      - VISIBLE=true
+      - CROSSPLATFORM=true
+      - BATTLYE=true
+      # Scenario options:
+      # "{ECC61978EDCC2B5A}Missions/23_Campaign.conf" - Conflict (Everon)
+      # "{59AD59368755F41A}Missions/21_GM_Eden.conf" - Game Master (Everon)
+      # "{28802845ADA64D52}Missions/22_GM_Arland.conf" - Game Master (Arland)
+      - SCENARIO_ID="{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+      - SERVER_MAX_VIEW_DISTANCE=2500
+      - SERVER_MIN_GRASS_DISTANCE=50
+      - NETWORK_VIEW_DISTANCE=1500
+      # Comma-separated mod IDs from Workshop
+      - MODS=
+    
+    ports:
+      - "2001:2001/udp"   # Game port
+      - "17777:17777/udp" # Steam Query/A2S port
+    
+    volumes:
+      - reforger-data:/home/reforger/data
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+volumes:
+  reforger-data:
+    driver: local

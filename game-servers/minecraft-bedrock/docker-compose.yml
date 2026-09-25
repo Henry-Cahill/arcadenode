@@ -1,0 +1,78 @@
+# Minecraft Bedrock Server - Standalone Docker Compose
+# For use with ArcadeNode Panel
+
+version: '3.8'
+
+services:
+  minecraft-bedrock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arcadenode/minecraft-bedrock:latest
+    container_name: mc-bedrock-server
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    
+    environment:
+      # Version: LATEST or specific (e.g., 1.21.44.01)
+      - VERSION=LATEST
+      
+      # Server settings
+      - SERVER_NAME=ArcadeNode Bedrock Server
+      - SERVER_PORT=19132
+      - SERVER_PORTV6=19133
+      - MAX_PLAYERS=10
+      
+      # Game settings
+      - GAMEMODE=survival
+      - DIFFICULTY=normal
+      - LEVEL_NAME=Bedrock level
+      - LEVEL_SEED=
+      - LEVEL_TYPE=DEFAULT
+      - ALLOW_CHEATS=false
+      
+      # Performance
+      - VIEW_DISTANCE=32
+      - TICK_DISTANCE=4
+      - MAX_THREADS=8
+      - PLAYER_IDLE_TIMEOUT=30
+      
+      # Security
+      - ONLINE_MODE=true
+      - WHITE_LIST=false
+      - DEFAULT_PLAYER_PERMISSION_LEVEL=member
+      
+      # Anti-cheat settings
+      - SERVER_AUTHORITATIVE_MOVEMENT=server-auth
+      - SERVER_AUTHORITATIVE_BLOCK_BREAKING=false
+      - CORRECT_PLAYER_MOVEMENT=false
+      
+      # Customization
+      - TEXTUREPACK_REQUIRED=false
+      - DISABLE_CUSTOM_SKINS=false
+      - CHAT_RESTRICTION=None
+      
+      # Comma-separated list of allowed players (Xbox Gamertags)
+      - ALLOW_LIST_USERS=
+      # Comma-separated list of operator XUIDs
+      - OPS=
+    
+    ports:
+      - "19132:19132/udp"  # Game port IPv4
+      - "19133:19133/udp"  # Game port IPv6
+    
+    volumes:
+      - bedrock-data:/home/bedrock/data
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+volumes:
+  bedrock-data:
+    driver: local

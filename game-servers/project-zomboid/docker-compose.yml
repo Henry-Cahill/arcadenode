@@ -1,0 +1,50 @@
+# Project Zomboid Server - Standalone Docker Compose
+# For use with ArcadeNode Panel
+
+version: '3.8'
+
+services:
+  project-zomboid:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arcadenode/project-zomboid:latest
+    container_name: pz-server
+    restart: unless-stopped
+    
+    environment:
+      - SERVER_NAME=My PZ Server
+      - SERVER_PASSWORD=
+      - ADMIN_PASSWORD=changeme
+      - SERVER_PORT=16261
+      - DIRECT_PORT=16262
+      - RCON_PORT=27015
+      - MAX_PLAYERS=16
+      - MAX_RAM=4096
+      - PUBLIC_SERVER=true
+      - PAUSE_EMPTY=true
+      - STEAM_VAC=true
+      # Comma-separated mod IDs
+      - MOD_IDS=
+      # Comma-separated workshop IDs
+      - WORKSHOP_IDS=
+    
+    ports:
+      - "16261:16261/udp"  # Game port
+      - "16262:16262/udp"  # Direct port
+      - "27015:27015/tcp"  # RCON port
+    
+    volumes:
+      - pz-data:/home/pzserver/data
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 4G
+
+volumes:
+  pz-data:
+    driver: local

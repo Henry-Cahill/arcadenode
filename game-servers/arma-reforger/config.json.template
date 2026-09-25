@@ -1,0 +1,51 @@
+{
+    "dedicatedServerId": "",
+    "region": "EU",
+    "gameHostBindAddress": "0.0.0.0",
+    "gameHostBindPort": ${GAME_PORT},
+    "gameHostRegisterBindAddress": "",
+    "gameHostRegisterPort": ${GAME_PORT},
+    "adminPassword": "${ADMIN_PASSWORD}",
+    "game": {
+        "name": "${SERVER_NAME}",
+        "password": "${SERVER_PASSWORD}",
+        "passwordAdmin": "${ADMIN_PASSWORD}",
+        "admins": [],
+        "scenarioId": ${SCENARIO_ID},
+        "maxPlayers": ${MAX_PLAYERS},
+        "visible": ${VISIBLE},
+        "crossPlatform": ${CROSSPLATFORM},
+        "supportedPlatforms": [
+            "PLATFORM_PC",
+            "PLATFORM_XBL"
+        ],
+        "gameProperties": {
+            "serverMaxViewDistance": ${SERVER_MAX_VIEW_DISTANCE},
+            "serverMinGrassDistance": ${SERVER_MIN_GRASS_DISTANCE},
+            "networkViewDistance": ${NETWORK_VIEW_DISTANCE},
+            "disableThirdPerson": false,
+            "fastValidation": true,
+            "battlEye": ${BATTLYE},
+            "VONDisableUI": false,
+            "VONDisableDirectSpeechUI": false,
+            "missionHeader": {
+                "m_iPlayerCount": ${MAX_PLAYERS},
+                "m_eEditableGameFlags": 6,
+                "m_eDefaultGameFlags": 6
+            }
+        },
+        "mods": []
+    },
+    "a2s": {
+        "address": "0.0.0.0",
+        "port": ${A2S_PORT}
+    },
+    "rpiServer": {
+        "bindAddress": "0.0.0.0",
+        "bindPort": 2002
+    },
+    "operating": {
+        "lobbyPlayerSynchronise": true,
+        "disableCrashReporter": false
+    }
+}

@@ -1,0 +1,33 @@
+# ArcadeNode - Game Server Cartridges Builder
+# Builds all game server images
+
+version: '3.8'
+
+services:
+  # Project Zomboid Server
+  project-zomboid:
+    build:
+      context: ./project-zomboid
+      dockerfile: Dockerfile
+    image: arcadenode/project-zomboid:latest
+
+  # Arma Reforger Server
+  arma-reforger:
+    build:
+      context: ./arma-reforger
+      dockerfile: Dockerfile
+    image: arcadenode/arma-reforger:latest
+
+  # Minecraft Java Server
+  minecraft:
+    build:
+      context: ./minecraft
+      dockerfile: Dockerfile
+    image: arcadenode/minecraft:latest
+
+  # Minecraft Bedrock Server
+  minecraft-bedrock:
+    build:
+      context: ./minecraft-bedrock
+      dockerfile: Dockerfile
+    image: arcadenode/minecraft-bedrock:latest

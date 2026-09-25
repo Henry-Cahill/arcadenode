@@ -1,0 +1,573 @@
+{
+    "$schema": "https://arcadenode.io/schemas/cartridge-v1.json",
+    "meta": {
+        "version": "1.0",
+        "format": "ARCADENODE_V1",
+        "exported_at": "2026-01-18T00:00:00Z"
+    },
+    
+    "id": "project-zomboid",
+    "name": "Project Zomboid",
+    "author": "ArcadeNode Team",
+    "description": "Project Zomboid is an open world survival horror video game. This cartridge runs a dedicated multiplayer server supporting Build 41 and Build 42.",
+    "category": "survival",
+    "tags": ["zombie", "survival", "multiplayer", "steamcmd", "coop"],
+    "website": "https://projectzomboid.com",
+    "icon": "https://cdn.cloudflare.steamstatic.com/steam/apps/108600/header.jpg",
+    
+    "docker": {
+        "image": "arcadenode/project-zomboid:latest",
+        "build": {
+            "dockerfile": "Dockerfile",
+            "context": "."
+        },
+        "base_image": "steamcmd/steamcmd:ubuntu-24"
+    },
+    
+    "ports": {
+        "game": {
+            "default": 16261,
+            "protocol": "udp",
+            "required": true,
+            "description": "Main game port for client connections"
+        },
+        "steam": {
+            "default": 16262,
+            "protocol": "udp",
+            "required": true,
+            "description": "Steam query/direct connection port"
+        },
+        "rcon": {
+            "default": 27015,
+            "protocol": "tcp",
+            "required": false,
+            "description": "RCON remote administration port"
+        }
+    },
+    
+    "resources": {
+        "memory": {
+            "minimum": 2048,
+            "recommended": 4096,
+            "maximum": 16384,
+            "unit": "MB"
+        },
+        "cpu": {
+            "minimum": 1,
+            "recommended": 2,
+            "unit": "cores"
+        },
+        "disk": {
+            "minimum": 10240,
+            "recommended": 25600,
+            "unit": "MB"
+        }
+    },
+    
+    "startup": {
+        "command": "./start-server.sh -servername \"{{SERVER_NAME_SAFE}}\" -adminpassword \"{{ADMIN_PASSWORD}}\" -ip 0.0.0.0 -port {{GAME_PORT}} -udpport {{STEAM_PORT}} -cachedir=\"{{ZOMBOID_DIR}}\"",
+        "working_directory": "/home/pzserver/server",
+        "ready_pattern": "SERVER STARTED",
+        "ready_timeout": 300,
+        "environment": {
+            "HOME": "/home/pzserver",
+            "JAVA_OPTS": "-Xms{{SERVER_MEMORY}}m -Xmx{{SERVER_MEMORY}}m"
+        }
+    },
+    
+    "process": {
+        "stop_command": "quit",
+        "stop_timeout": 30,
+        "restart_on_crash": true,
+        "crash_patterns": [
+            "FATAL ERROR",
+            "OutOfMemoryError",
+            "java.lang.NullPointerException"
+        ]
+    },
+    
+    "installation": {
+        "type": "steamcmd",
+        "app_id": 380870,
+        "anonymous": true,
+        "validate": true,
+        "platform": "linux",
+        "beta": {
+            "branch_variable": "BETA_BRANCH",
+            "password_variable": "BETA_PASSWORD"
+        },
+        "post_install": [
+            "chmod +x /home/pzserver/server/start-server.sh"
+        ]
+    },
+    
+    "directories": {
+        "server": {
+            "path": "/home/pzserver/server",
+            "description": "Server installation directory"
+        },
+        "data": {
+            "path": "/home/pzserver/data",
+            "description": "Persistent data storage",
+            "volume": true
+        },
+        "cache": {
+            "path": "/home/pzserver/.cache",
+            "description": "Generated configs, scripts, and logs"
+        },
+        "zomboid": {
+            "path": "/home/pzserver/Zomboid",
+            "description": "PZ runtime directory (symlinked to data)"
+        }
+    },
+    
+    "config_files": {
+        "server_ini": {
+            "parser": "ini",
+            "template": "templates/server.ini.template",
+            "location": "{{DATA_DIR}}/Server/{{SERVER_NAME_SAFE}}.ini",
+            "generate_if_missing": true,
+            "mappings": {
+                "PublicName": "{{SERVER_NAME}}",
+                "Public": "{{PUBLIC_SERVER}}",
+                "MaxPlayers": "{{MAX_PLAYERS}}",
+                "Password": "{{SERVER_PASSWORD}}",
+                "DefaultPort": "{{GAME_PORT}}",
+                "UDPPort": "{{STEAM_PORT}}",
+                "RCONPort": "{{RCON_PORT}}",
+                "RCONPassword": "{{ADMIN_PASSWORD}}",
+                "PauseEmpty": "{{PAUSE_EMPTY}}",
+                "SteamVAC": "{{STEAM_VAC}}",
+                "Mods": "{{MOD_IDS}}",
+                "WorkshopItems": "{{WORKSHOP_IDS}}"
+            }
+        },
+        "sandbox_vars": {
+            "parser": "lua",
+            "template": "templates/SandboxVars.lua.template",
+            "location": "{{DATA_DIR}}/Server/{{SERVER_NAME_SAFE}}_SandboxVars.lua",
+            "generate_if_missing": true
+        },
+        "spawnpoints": {
+            "parser": "lua",
+            "template": "templates/spawnpoints.lua.template",
+            "location": "{{DATA_DIR}}/Server/{{SERVER_NAME_SAFE}}_spawnpoints.lua",
+            "generate_if_missing": true
+        },
+        "spawnregions": {
+            "parser": "lua",
+            "template": "templates/spawnregions.lua.template",
+            "location": "{{DATA_DIR}}/Server/{{SERVER_NAME_SAFE}}_spawnregions.lua",
+            "generate_if_missing": true
+        }
+    },
+    
+    "variables": [
+        {
+            "id": "server_name",
+            "name": "Server Name",
+            "description": "Display name of your server (shown in server browser)",
+            "env_variable": "SERVER_NAME",
+            "type": "string",
+            "default": "ArcadeNode PZ Server",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min_length": 1,
+                "max_length": 64
+            },
+            "ui": {
+                "component": "text",
+                "placeholder": "Enter server name",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "admin_password",
+            "name": "Admin Password",
+            "description": "Password for the admin account (required for first login)",
+            "env_variable": "ADMIN_PASSWORD",
+            "type": "string",
+            "default": "",
+            "required": true,
+            "user_viewable": false,
+            "user_editable": true,
+            "validation": {
+                "min_length": 4,
+                "max_length": 64
+            },
+            "ui": {
+                "component": "password",
+                "placeholder": "Enter admin password",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "server_password",
+            "name": "Server Password",
+            "description": "Password required to join the server (leave empty for public)",
+            "env_variable": "SERVER_PASSWORD",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "max_length": 64
+            },
+            "ui": {
+                "component": "password",
+                "placeholder": "Leave empty for no password",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "max_players",
+            "name": "Max Players",
+            "description": "Maximum number of concurrent players",
+            "env_variable": "MAX_PLAYERS",
+            "type": "integer",
+            "default": 16,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min": 1,
+                "max": 100
+            },
+            "ui": {
+                "component": "slider",
+                "step": 1,
+                "marks": [1, 16, 32, 64, 100],
+                "group": "basic"
+            }
+        },
+        {
+            "id": "public_server",
+            "name": "Public Server",
+            "description": "Show server in public server browser",
+            "env_variable": "PUBLIC_SERVER",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "on_label": "Public",
+                "off_label": "Private",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "pause_empty",
+            "name": "Pause When Empty",
+            "description": "Pause the game when no players are online",
+            "env_variable": "PAUSE_EMPTY",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "steam_vac",
+            "name": "Steam VAC",
+            "description": "Enable Valve Anti-Cheat",
+            "env_variable": "STEAM_VAC",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "security"
+            }
+        },
+        {
+            "id": "mod_ids",
+            "name": "Mod IDs",
+            "description": "Mod IDs to load (semicolon-separated)",
+            "env_variable": "MOD_IDS",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "textarea",
+                "placeholder": "ModID1;ModID2;ModID3",
+                "rows": 3,
+                "group": "mods"
+            }
+        },
+        {
+            "id": "workshop_ids",
+            "name": "Workshop IDs",
+            "description": "Steam Workshop item IDs to download (semicolon-separated)",
+            "env_variable": "WORKSHOP_IDS",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "textarea",
+                "placeholder": "2392709985;2313387159",
+                "rows": 3,
+                "group": "mods",
+                "help": "Find workshop IDs at steamcommunity.com/app/108600/workshop"
+            }
+        },
+        {
+            "id": "beta_branch",
+            "name": "Beta Branch",
+            "description": "Steam beta branch to install (leave empty for stable Build 42)",
+            "env_variable": "BETA_BRANCH",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "select",
+                "options": [
+                    {"value": "", "label": "Stable - Build 42 (Recommended)"},
+                    {"value": "unstable", "label": "Unstable (Testing Only)"},
+                    {"value": "legacy41_77", "label": "Legacy Build 41.77"},
+                    {"value": "legacy_42_12", "label": "Legacy Build 42.12"},
+                    {"value": "42.13.1", "label": "Build 42.13.1"}
+                ],
+                "group": "advanced"
+            }
+        },
+        {
+            "id": "max_ram",
+            "name": "Max RAM (MB)",
+            "description": "Maximum memory allocation for the server",
+            "env_variable": "MAX_RAM",
+            "type": "integer",
+            "default": 4096,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": false,
+            "validation": {
+                "min": 2048,
+                "max": 16384
+            },
+            "ui": {
+                "component": "slider",
+                "step": 512,
+                "marks": [2048, 4096, 8192, 16384],
+                "suffix": " MB",
+                "group": "resources"
+            }
+        }
+    ],
+    
+    "system_variables": {
+        "STEAM_APP_ID": "380870",
+        "SERVER_NAME_SAFE": "{{SERVER_NAME|sanitize}}",
+        "DATA_DIR": "/home/pzserver/data",
+        "CACHE_DIR": "/home/pzserver/.cache",
+        "ZOMBOID_DIR": "/home/pzserver/Zomboid",
+        "SERVER_DIR": "/home/pzserver/server"
+    },
+    
+    "variable_groups": [
+        {
+            "id": "basic",
+            "name": "Basic Settings",
+            "description": "Essential server configuration",
+            "order": 1
+        },
+        {
+            "id": "gameplay",
+            "name": "Gameplay",
+            "description": "Gameplay-related settings",
+            "order": 2
+        },
+        {
+            "id": "security",
+            "name": "Security",
+            "description": "Security and anti-cheat settings",
+            "order": 3
+        },
+        {
+            "id": "mods",
+            "name": "Mods & Workshop",
+            "description": "Mod configuration",
+            "order": 4
+        },
+        {
+            "id": "advanced",
+            "name": "Advanced",
+            "description": "Advanced configuration options",
+            "order": 5,
+            "collapsed": true
+        },
+        {
+            "id": "resources",
+            "name": "Resources",
+            "description": "Server resource allocation",
+            "order": 6,
+            "admin_only": true
+        }
+    ],
+    
+    "volumes": {
+        "data": {
+            "container_path": "/home/pzserver/data",
+            "description": "Persistent game data (saves, configs)",
+            "required": true,
+            "backup": true
+        }
+    },
+    
+    "health_check": {
+        "type": "udp",
+        "port": "{{GAME_PORT}}",
+        "interval": 30,
+        "timeout": 10,
+        "start_period": 180,
+        "retries": 3
+    },
+    
+    "backup": {
+        "enabled": true,
+        "paths": [
+            "{{DATA_DIR}}/Saves",
+            "{{DATA_DIR}}/Server"
+        ],
+        "exclude": [
+            "*.log",
+            "*.tmp",
+            "*.bak"
+        ],
+        "schedule": "0 */6 * * *",
+        "retention": 7
+    },
+    
+    "console": {
+        "enabled": true,
+        "type": "stdin",
+        "commands": {
+            "players": {
+                "command": "players",
+                "description": "List all online players"
+            },
+            "kick": {
+                "command": "kickuser \"{{username}}\"",
+                "description": "Kick a player from the server",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "type": "string",
+                        "required": true
+                    }
+                ]
+            },
+            "ban": {
+                "command": "banuser \"{{username}}\"",
+                "description": "Ban a player from the server",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "type": "string",
+                        "required": true
+                    }
+                ]
+            },
+            "unban": {
+                "command": "unbanuser \"{{username}}\"",
+                "description": "Unban a player",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "type": "string",
+                        "required": true
+                    }
+                ]
+            },
+            "save": {
+                "command": "save",
+                "description": "Force save the world"
+            },
+            "broadcast": {
+                "command": "servermsg \"{{message}}\"",
+                "description": "Broadcast a message to all players",
+                "parameters": [
+                    {
+                        "name": "message",
+                        "type": "string",
+                        "required": true
+                    }
+                ]
+            },
+            "teleport": {
+                "command": "teleport \"{{player}}\" \"{{target}}\"",
+                "description": "Teleport a player to another player",
+                "parameters": [
+                    {
+                        "name": "player",
+                        "type": "string",
+                        "required": true
+                    },
+                    {
+                        "name": "target",
+                        "type": "string",
+                        "required": true
+                    }
+                ]
+            },
+            "additem": {
+                "command": "additem \"{{player}}\" \"{{item}}\" {{count}}",
+                "description": "Give an item to a player",
+                "parameters": [
+                    {
+                        "name": "player",
+                        "type": "string",
+                        "required": true
+                    },
+                    {
+                        "name": "item",
+                        "type": "string",
+                        "required": true
+                    },
+                    {
+                        "name": "count",
+                        "type": "integer",
+                        "default": 1
+                    }
+                ]
+            }
+        }
+    },
+    
+    "updates": {
+        "auto_update": false,
+        "check_on_start": true,
+        "method": "steamcmd"
+    },
+    
+    "logs": {
+        "files": [
+            {
+                "name": "Server Console",
+                "path": "{{DATA_DIR}}/Logs/console.txt",
+                "tail": true
+            },
+            {
+                "name": "User Log",
+                "path": "{{DATA_DIR}}/Logs/user.txt"
+            }
+        ],
+        "docker_logs": true
+    }
+}

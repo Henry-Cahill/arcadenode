@@ -1,0 +1,83 @@
+services:
+  # SQL Server 2025 Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: arcadenode_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - arcadenode_network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # .NET 9 Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arcadenode_backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ArcadeNode;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;
+      - Jwt__Key=${JWT_KEY}
+      - Seed__AdminPassword=${ADMIN_PASSWORD}
+    ports:
+      - "5000:5000"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - arcadenode_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./cartridges:/app/cartridges:ro
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: arcadenode_frontend
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - arcadenode_network
+
+  # Game Server Node (Docker-in-Docker)
+  node:
+    image: docker:dind
+    container_name: arcadenode_node
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    volumes:
+      - node_data:/var/lib/docker
+      - game_servers:/srv/gameservers
+    networks:
+      - arcadenode_network
+    ports:
+      - "2375:2375"
+
+networks:
+  arcadenode_network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  node_data:
+  game_servers:

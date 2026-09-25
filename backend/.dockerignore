@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/.git/
+**/.vs/
+**/.vscode/
+**/Thumbs.db
+**/*.user
+**/*.suo
+# Prevent recursive nesting from previous deploys
+ServerPanel.API/ServerPanel.API/

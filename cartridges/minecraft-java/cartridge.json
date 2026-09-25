@@ -1,0 +1,754 @@
+{
+    "$schema": "https://arcadenode.io/schemas/cartridge-v1.json",
+    "meta": {
+        "version": "1.0",
+        "format": "ARCADENODE_V1",
+        "exported_at": "2026-01-18T00:00:00Z"
+    },
+    
+    "id": "minecraft-java",
+    "name": "Minecraft: Java Edition",
+    "author": "ArcadeNode Team",
+    "description": "Minecraft Java Edition server supporting Vanilla, Paper, Spigot, and Forge. Run your own Minecraft server with full mod support.",
+    "category": "sandbox",
+    "tags": ["minecraft", "sandbox", "survival", "creative", "mods"],
+    "website": "https://minecraft.net",
+    "icon": "https://www.minecraft.net/content/dam/games/minecraft/key-art/Games_Subnav_Minecraft-702x702.jpg",
+    
+    "docker": {
+        "image": "arcadenode/minecraft-java:latest",
+        "build": {
+            "dockerfile": "Dockerfile",
+            "context": "."
+        },
+        "base_image": "eclipse-temurin:21-jre"
+    },
+    
+    "ports": {
+        "game": {
+            "default": 25565,
+            "protocol": "tcp",
+            "required": true,
+            "description": "Main game port for client connections"
+        },
+        "rcon": {
+            "default": 25575,
+            "protocol": "tcp",
+            "required": false,
+            "description": "RCON remote administration port"
+        },
+        "query": {
+            "default": 25565,
+            "protocol": "udp",
+            "required": false,
+            "description": "Query port for server info"
+        }
+    },
+    
+    "resources": {
+        "memory": {
+            "minimum": 1024,
+            "recommended": 2048,
+            "maximum": 16384,
+            "unit": "MB"
+        },
+        "cpu": {
+            "minimum": 1,
+            "recommended": 2,
+            "unit": "cores"
+        },
+        "disk": {
+            "minimum": 2048,
+            "recommended": 10240,
+            "unit": "MB"
+        }
+    },
+    
+    "startup": {
+        "command": "java -Xms{{MIN_MEMORY}}M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JAR}} nogui",
+        "working_directory": "/home/minecraft",
+        "ready_pattern": "Done \\([0-9.]+s\\)! For help, type",
+        "ready_timeout": 120,
+        "environment": {
+            "EULA": "true"
+        }
+    },
+    
+    "process": {
+        "stop_command": "stop",
+        "stop_timeout": 30,
+        "restart_on_crash": true,
+        "crash_patterns": [
+            "FATAL ERROR",
+            "OutOfMemoryError",
+            "java.lang.Error"
+        ]
+    },
+    
+    "installation": {
+        "type": "download",
+        "sources": {
+            "vanilla": {
+                "name": "Vanilla",
+                "url": "https://piston-data.mojang.com/v1/objects/{{VERSION_HASH}}/server.jar",
+                "manifest": "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+            },
+            "paper": {
+                "name": "Paper",
+                "url": "https://api.papermc.io/v2/projects/paper/versions/{{MC_VERSION}}/builds/{{BUILD}}/downloads/paper-{{MC_VERSION}}-{{BUILD}}.jar",
+                "api": "https://api.papermc.io/v2/projects/paper"
+            },
+            "purpur": {
+                "name": "Purpur",
+                "url": "https://api.purpurmc.org/v2/purpur/{{MC_VERSION}}/latest/download"
+            }
+        },
+        "post_install": [
+            "echo 'eula=true' > eula.txt"
+        ]
+    },
+    
+    "directories": {
+        "server": {
+            "path": "/home/minecraft",
+            "description": "Server installation directory",
+            "volume": true
+        },
+        "world": {
+            "path": "/home/minecraft/world",
+            "description": "World data"
+        },
+        "plugins": {
+            "path": "/home/minecraft/plugins",
+            "description": "Plugin directory (Paper/Spigot)"
+        },
+        "mods": {
+            "path": "/home/minecraft/mods",
+            "description": "Mod directory (Forge/Fabric)"
+        }
+    },
+    
+    "config_files": {
+        "server_properties": {
+            "parser": "properties",
+            "template": "templates/server.properties.template",
+            "location": "/home/minecraft/server.properties",
+            "generate_if_missing": true,
+            "mappings": {
+                "server-port": "{{GAME_PORT}}",
+                "query.port": "{{GAME_PORT}}",
+                "rcon.port": "{{RCON_PORT}}",
+                "rcon.password": "{{RCON_PASSWORD}}",
+                "enable-rcon": "{{RCON_ENABLED}}",
+                "enable-query": "{{QUERY_ENABLED}}",
+                "max-players": "{{MAX_PLAYERS}}",
+                "motd": "{{MOTD}}",
+                "gamemode": "{{GAMEMODE}}",
+                "difficulty": "{{DIFFICULTY}}",
+                "level-name": "{{WORLD_NAME}}",
+                "level-seed": "{{WORLD_SEED}}",
+                "pvp": "{{PVP}}",
+                "hardcore": "{{HARDCORE}}",
+                "online-mode": "{{ONLINE_MODE}}",
+                "white-list": "{{WHITELIST}}",
+                "spawn-protection": "{{SPAWN_PROTECTION}}",
+                "view-distance": "{{VIEW_DISTANCE}}",
+                "simulation-distance": "{{SIMULATION_DISTANCE}}"
+            }
+        },
+        "eula": {
+            "parser": "properties",
+            "location": "/home/minecraft/eula.txt",
+            "generate_if_missing": true,
+            "mappings": {
+                "eula": "true"
+            }
+        }
+    },
+    
+    "variables": [
+        {
+            "id": "server_type",
+            "name": "Server Type",
+            "description": "Type of Minecraft server to run",
+            "env_variable": "SERVER_TYPE",
+            "type": "string",
+            "default": "paper",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "select",
+                "options": [
+                    {"value": "vanilla", "label": "Vanilla"},
+                    {"value": "paper", "label": "Paper (Recommended)"},
+                    {"value": "spigot", "label": "Spigot"},
+                    {"value": "purpur", "label": "Purpur"},
+                    {"value": "forge", "label": "Forge"},
+                    {"value": "fabric", "label": "Fabric"}
+                ],
+                "group": "basic"
+            }
+        },
+        {
+            "id": "mc_version",
+            "name": "Minecraft Version",
+            "description": "Version of Minecraft to run",
+            "env_variable": "MC_VERSION",
+            "type": "string",
+            "default": "1.21.1",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "text",
+                "placeholder": "1.21.1",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "server_jar",
+            "name": "Server JAR",
+            "description": "Name of the server JAR file",
+            "env_variable": "SERVER_JAR",
+            "type": "string",
+            "default": "server.jar",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": false,
+            "validation": {
+                "pattern": "^[\\w\\d._-]+\\.jar$"
+            },
+            "ui": {
+                "component": "text",
+                "group": "advanced"
+            }
+        },
+        {
+            "id": "motd",
+            "name": "Server MOTD",
+            "description": "Message of the day shown in server list",
+            "env_variable": "MOTD",
+            "type": "string",
+            "default": "A Minecraft Server powered by ArcadeNode",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "max_length": 59
+            },
+            "ui": {
+                "component": "text",
+                "placeholder": "Enter server description",
+                "group": "basic"
+            }
+        },
+        {
+            "id": "max_players",
+            "name": "Max Players",
+            "description": "Maximum number of concurrent players",
+            "env_variable": "MAX_PLAYERS",
+            "type": "integer",
+            "default": 20,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min": 1,
+                "max": 1000
+            },
+            "ui": {
+                "component": "slider",
+                "step": 1,
+                "marks": [1, 20, 50, 100],
+                "group": "basic"
+            }
+        },
+        {
+            "id": "gamemode",
+            "name": "Default Gamemode",
+            "description": "Default gamemode for new players",
+            "env_variable": "GAMEMODE",
+            "type": "string",
+            "default": "survival",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "select",
+                "options": [
+                    {"value": "survival", "label": "Survival"},
+                    {"value": "creative", "label": "Creative"},
+                    {"value": "adventure", "label": "Adventure"},
+                    {"value": "spectator", "label": "Spectator"}
+                ],
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "difficulty",
+            "name": "Difficulty",
+            "description": "Server difficulty level",
+            "env_variable": "DIFFICULTY",
+            "type": "string",
+            "default": "normal",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "select",
+                "options": [
+                    {"value": "peaceful", "label": "Peaceful"},
+                    {"value": "easy", "label": "Easy"},
+                    {"value": "normal", "label": "Normal"},
+                    {"value": "hard", "label": "Hard"}
+                ],
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "hardcore",
+            "name": "Hardcore Mode",
+            "description": "Enable hardcore mode (permanent death)",
+            "env_variable": "HARDCORE",
+            "type": "boolean",
+            "default": false,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "pvp",
+            "name": "PvP",
+            "description": "Allow players to fight each other",
+            "env_variable": "PVP",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "world_name",
+            "name": "World Name",
+            "description": "Name of the world folder",
+            "env_variable": "WORLD_NAME",
+            "type": "string",
+            "default": "world",
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "max_length": 32
+            },
+            "ui": {
+                "component": "text",
+                "group": "world"
+            }
+        },
+        {
+            "id": "world_seed",
+            "name": "World Seed",
+            "description": "Seed for world generation (leave empty for random)",
+            "env_variable": "WORLD_SEED",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "text",
+                "placeholder": "Leave empty for random",
+                "group": "world"
+            }
+        },
+        {
+            "id": "online_mode",
+            "name": "Online Mode",
+            "description": "Verify players against Minecraft account database",
+            "env_variable": "ONLINE_MODE",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "help": "Disable for offline/cracked servers",
+                "group": "security"
+            }
+        },
+        {
+            "id": "whitelist",
+            "name": "Whitelist",
+            "description": "Only allow whitelisted players to join",
+            "env_variable": "WHITELIST",
+            "type": "boolean",
+            "default": false,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "security"
+            }
+        },
+        {
+            "id": "view_distance",
+            "name": "View Distance",
+            "description": "Render distance in chunks",
+            "env_variable": "VIEW_DISTANCE",
+            "type": "integer",
+            "default": 10,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min": 3,
+                "max": 32
+            },
+            "ui": {
+                "component": "slider",
+                "step": 1,
+                "marks": [3, 10, 16, 24, 32],
+                "group": "performance"
+            }
+        },
+        {
+            "id": "simulation_distance",
+            "name": "Simulation Distance",
+            "description": "Distance in chunks for entity simulation",
+            "env_variable": "SIMULATION_DISTANCE",
+            "type": "integer",
+            "default": 10,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min": 3,
+                "max": 32
+            },
+            "ui": {
+                "component": "slider",
+                "step": 1,
+                "marks": [3, 10, 16, 24, 32],
+                "group": "performance"
+            }
+        },
+        {
+            "id": "spawn_protection",
+            "name": "Spawn Protection",
+            "description": "Radius of spawn protection (0 to disable)",
+            "env_variable": "SPAWN_PROTECTION",
+            "type": "integer",
+            "default": 16,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "validation": {
+                "min": 0,
+                "max": 100
+            },
+            "ui": {
+                "component": "number",
+                "group": "gameplay"
+            }
+        },
+        {
+            "id": "rcon_enabled",
+            "name": "Enable RCON",
+            "description": "Enable remote console access",
+            "env_variable": "RCON_ENABLED",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "advanced"
+            }
+        },
+        {
+            "id": "rcon_password",
+            "name": "RCON Password",
+            "description": "Password for RCON access",
+            "env_variable": "RCON_PASSWORD",
+            "type": "string",
+            "default": "",
+            "required": false,
+            "user_viewable": false,
+            "user_editable": true,
+            "ui": {
+                "component": "password",
+                "group": "advanced"
+            }
+        },
+        {
+            "id": "query_enabled",
+            "name": "Enable Query",
+            "description": "Enable GameSpy4 query protocol",
+            "env_variable": "QUERY_ENABLED",
+            "type": "boolean",
+            "default": true,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": true,
+            "ui": {
+                "component": "switch",
+                "group": "advanced"
+            }
+        },
+        {
+            "id": "min_memory",
+            "name": "Min Memory (MB)",
+            "description": "Minimum memory allocation",
+            "env_variable": "MIN_MEMORY",
+            "type": "integer",
+            "default": 512,
+            "required": true,
+            "user_viewable": true,
+            "user_editable": false,
+            "validation": {
+                "min": 256,
+                "max": 8192
+            },
+            "ui": {
+                "component": "number",
+                "suffix": " MB",
+                "group": "resources"
+            }
+        }
+    ],
+    
+    "variable_groups": [
+        {
+            "id": "basic",
+            "name": "Basic Settings",
+            "description": "Essential server configuration",
+            "order": 1
+        },
+        {
+            "id": "gameplay",
+            "name": "Gameplay",
+            "description": "Gameplay rules and settings",
+            "order": 2
+        },
+        {
+            "id": "world",
+            "name": "World",
+            "description": "World generation settings",
+            "order": 3
+        },
+        {
+            "id": "security",
+            "name": "Security",
+            "description": "Authentication and access control",
+            "order": 4
+        },
+        {
+            "id": "performance",
+            "name": "Performance",
+            "description": "Performance tuning options",
+            "order": 5
+        },
+        {
+            "id": "advanced",
+            "name": "Advanced",
+            "description": "Advanced configuration",
+            "order": 6,
+            "collapsed": true
+        },
+        {
+            "id": "resources",
+            "name": "Resources",
+            "description": "Server resource allocation",
+            "order": 7,
+            "admin_only": true
+        }
+    ],
+    
+    "volumes": {
+        "server": {
+            "container_path": "/home/minecraft",
+            "description": "Server files and world data",
+            "required": true,
+            "backup": true
+        }
+    },
+    
+    "health_check": {
+        "type": "tcp",
+        "port": "{{GAME_PORT}}",
+        "interval": 30,
+        "timeout": 10,
+        "start_period": 120,
+        "retries": 3
+    },
+    
+    "backup": {
+        "enabled": true,
+        "paths": [
+            "/home/minecraft/world",
+            "/home/minecraft/world_nether",
+            "/home/minecraft/world_the_end",
+            "/home/minecraft/plugins",
+            "/home/minecraft/server.properties",
+            "/home/minecraft/whitelist.json",
+            "/home/minecraft/ops.json",
+            "/home/minecraft/banned-players.json",
+            "/home/minecraft/banned-ips.json"
+        ],
+        "exclude": [
+            "*.log",
+            "*.tmp",
+            "cache/**"
+        ],
+        "schedule": "0 */6 * * *",
+        "retention": 7
+    },
+    
+    "console": {
+        "enabled": true,
+        "type": "stdin",
+        "commands": {
+            "list": {
+                "command": "list",
+                "description": "List online players"
+            },
+            "say": {
+                "command": "say {{message}}",
+                "description": "Broadcast a message",
+                "parameters": [
+                    {"name": "message", "type": "string", "required": true}
+                ]
+            },
+            "kick": {
+                "command": "kick {{player}} {{reason}}",
+                "description": "Kick a player",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true},
+                    {"name": "reason", "type": "string", "default": "Kicked by admin"}
+                ]
+            },
+            "ban": {
+                "command": "ban {{player}} {{reason}}",
+                "description": "Ban a player",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true},
+                    {"name": "reason", "type": "string", "default": "Banned by admin"}
+                ]
+            },
+            "pardon": {
+                "command": "pardon {{player}}",
+                "description": "Unban a player",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true}
+                ]
+            },
+            "op": {
+                "command": "op {{player}}",
+                "description": "Give operator status",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true}
+                ]
+            },
+            "deop": {
+                "command": "deop {{player}}",
+                "description": "Remove operator status",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true}
+                ]
+            },
+            "whitelist_add": {
+                "command": "whitelist add {{player}}",
+                "description": "Add player to whitelist",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true}
+                ]
+            },
+            "whitelist_remove": {
+                "command": "whitelist remove {{player}}",
+                "description": "Remove player from whitelist",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true}
+                ]
+            },
+            "tp": {
+                "command": "tp {{player}} {{target}}",
+                "description": "Teleport player to another player",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true},
+                    {"name": "target", "type": "string", "required": true}
+                ]
+            },
+            "give": {
+                "command": "give {{player}} {{item}} {{amount}}",
+                "description": "Give items to a player",
+                "parameters": [
+                    {"name": "player", "type": "string", "required": true},
+                    {"name": "item", "type": "string", "required": true},
+                    {"name": "amount", "type": "integer", "default": 1}
+                ]
+            },
+            "time": {
+                "command": "time set {{value}}",
+                "description": "Set world time",
+                "parameters": [
+                    {
+                        "name": "value",
+                        "type": "string",
+                        "required": true,
+                        "options": ["day", "night", "noon", "midnight"]
+                    }
+                ]
+            },
+            "weather": {
+                "command": "weather {{type}}",
+                "description": "Set weather",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "type": "string",
+                        "required": true,
+                        "options": ["clear", "rain", "thunder"]
+                    }
+                ]
+            },
+            "save": {
+                "command": "save-all",
+                "description": "Force save all worlds"
+            },
+            "reload": {
+                "command": "reload",
+                "description": "Reload server configuration"
+            }
+        }
+    },
+    
+    "updates": {
+        "auto_update": false,
+        "check_on_start": true,
+        "method": "download"
+    },
+    
+    "logs": {
+        "files": [
+            {
+                "name": "Latest Log",
+                "path": "/home/minecraft/logs/latest.log",
+                "tail": true
+            }
+        ],
+        "docker_logs": true
+    }
+}

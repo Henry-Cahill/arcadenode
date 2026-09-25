@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+build/
+bin/
+obj/
+out/
+
+# IDE
+.idea/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Logs
+logs/
+LOGS/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local deploy config
+.deploy-config.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Reference repos
+reference/
+
+# Misc
+*.pem
+*.key
+*.crt

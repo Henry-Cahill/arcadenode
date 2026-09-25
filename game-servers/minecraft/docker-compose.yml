@@ -1,0 +1,86 @@
+# Minecraft Server - Standalone Docker Compose
+# For use with ArcadeNode Panel
+
+version: '3.8'
+
+services:
+  minecraft:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arcadenode/minecraft:latest
+    container_name: mc-server
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    
+    environment:
+      # Server type: paper, vanilla, spigot
+      - SERVER_TYPE=paper
+      # Minecraft version
+      - MC_VERSION=1.21.1
+      # Paper build (use "latest" for most recent)
+      - PAPER_BUILD=latest
+      
+      # Server settings
+      - SERVER_NAME=My MC Server
+      - SERVER_PORT=25565
+      - RCON_PORT=25575
+      - RCON_PASSWORD=changeme
+      - MAX_PLAYERS=20
+      - MOTD=§6ArcadeNode §7- §fMinecraft Server
+      
+      # Game settings
+      - DIFFICULTY=normal
+      - GAMEMODE=survival
+      - LEVEL_NAME=world
+      - LEVEL_SEED=
+      - LEVEL_TYPE=minecraft:normal
+      - PVP=true
+      - ALLOW_NETHER=true
+      - ALLOW_FLIGHT=false
+      
+      # Performance
+      - VIEW_DISTANCE=10
+      - SIMULATION_DISTANCE=10
+      - MAX_RAM=4G
+      - MIN_RAM=2G
+      
+      # Security
+      - ONLINE_MODE=true
+      - WHITE_LIST=false
+      - ENFORCE_WHITELIST=false
+      - SPAWN_PROTECTION=16
+      
+      # RCON & Query
+      - ENABLE_RCON=true
+      - ENABLE_QUERY=true
+      
+      # Comma-separated list of operator usernames
+      - OPS=
+      
+      # URL to server icon (64x64 PNG)
+      - ICON_URL=
+    
+    ports:
+      - "25565:25565/tcp"  # Game port
+      - "25565:25565/udp"  # Game port (UDP)
+      - "25575:25575/tcp"  # RCON port
+    
+    volumes:
+      - mc-data:/home/minecraft/data
+      - mc-plugins:/home/minecraft/plugins
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+volumes:
+  mc-data:
+    driver: local
+  mc-plugins:
+    driver: local
